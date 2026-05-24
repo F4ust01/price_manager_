@@ -27,3 +27,13 @@
 - CRUD completo por entidad
 - Repositorio genérico en memoria
 - Manejo de errores y validaciones
+
+---
+
+### Día 4 - Ejercicio 04
+- Implementación de servicios (lógica de negocio)
+- Validaciones:
+  - Relaciones entre entidades
+  - Control de stock
+  - Histórico de cotizaciones
+- Separación de responsabilidades
