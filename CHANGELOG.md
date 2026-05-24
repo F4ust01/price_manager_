@@ -19,3 +19,11 @@
   - TipoCotizacion
 - Aplicación de encapsulamiento
 - Validaciones básicas
+
+---
+
+### Día 3 - Ejercicio 03
+- Implementación de repositorios
+- CRUD completo por entidad
+- Repositorio genérico en memoria
+- Manejo de errores y validaciones
