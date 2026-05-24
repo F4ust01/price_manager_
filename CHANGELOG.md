@@ -45,3 +45,11 @@
 - Implementación de carga de datos (preload)
 - Estructura migrations/csv
 - Mínimo 10 registros por entidad
+
+---
+
+### Día 6 - Ejercicio 06
+- Desarrollo de interfaz CLI
+- Menús interactivos
+- Integración con servicios
+- Manejo de inputs del usuario
