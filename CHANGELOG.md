@@ -37,3 +37,11 @@
   - Control de stock
   - Histórico de cotizaciones
 - Separación de responsabilidades
+
+---
+
+### Día 5 - Ejercicio 05
+- Creación de archivos CSV
+- Implementación de carga de datos (preload)
+- Estructura migrations/csv
+- Mínimo 10 registros por entidad
