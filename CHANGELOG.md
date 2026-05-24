@@ -53,3 +53,10 @@
 - Menús interactivos
 - Integración con servicios
 - Manejo de inputs del usuario
+
+---
+
+### Día 7 - Ejercicio 07
+- Implementación de main.py
+- Punto de entrada del sistema
+- Configuración de ejecución
