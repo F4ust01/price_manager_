@@ -1,3 +1,9 @@
+[Ejercicio 4]
+- Pipeline de comparación de precios interno vs web
+- Generación de archivo CSV de alertas en cada ejecución
+- Umbral de diferencia ingresado por el usuario antes de cada corrida
+- ServicioScraper: conversión de precios propios a pesos y subproceso Scrapy
+
 [Ejercicio 3]
 - Implementación de StarComputacionSpider con Scrapy
 - Loaders con procesadores de limpieza y parseo de precios

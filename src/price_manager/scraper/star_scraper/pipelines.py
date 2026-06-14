@@ -1,5 +1,7 @@
 
+import csv
 import datetime
+import os
 
 from scrapy.exceptions import DropItem
 
@@ -10,6 +12,11 @@ from price_manager.database.connection import (
 from price_manager.models.models import (
   Base,
   ResultadoScrapingModel
+)
+
+# Carpeta donde se depositan los archivos descargables del sistema.
+RUTA_REPORTES = (
+  "/content/price_manager/reportes"
 )
 
 
@@ -49,6 +56,109 @@ class LimpiezaValidacionPipeline:
     )
 
     return item
+
+
+class ComparacionAlertasPipeline:
+  """
+  Compara el precio interno con el precio web y genera las alertas.
+
+  En cada ejecución del spider se crea un archivo CSV descargable con
+  los productos cuya diferencia de precios supera el umbral ingresado
+  por el usuario antes de la corrida.
+  """
+
+  def open_spider(self, spider):
+    """Crea el archivo CSV de alertas de la ejecución actual."""
+
+    os.makedirs(
+      RUTA_REPORTES,
+      exist_ok=True
+    )
+
+    marca_tiempo = (
+      datetime.datetime.now().strftime(
+        "%Y-%m-%d_%H%M%S"
+      )
+    )
+
+    self.ruta_csv = os.path.join(
+      RUTA_REPORTES,
+      f"alertas_precios_{marca_tiempo}.csv"
+    )
+
+    self.archivo = open(
+      self.ruta_csv,
+      mode="w",
+      newline="",
+      encoding="utf-8"
+    )
+
+    self.writer = csv.writer(
+      self.archivo
+    )
+
+    self.writer.writerow([
+      "producto_id",
+      "producto",
+      "nombre_web",
+      "precio_interno",
+      "precio_web",
+      "diferencia",
+      "umbral",
+      "fecha"
+    ])
+
+    self.alertas: int = 0
+
+  def process_item(self, item, spider):
+    """Calcula la diferencia y registra la alerta si supera el umbral."""
+
+    diferencia = round(
+      item["precio_web"]
+      -
+      item["precio_interno"],
+      2
+    )
+
+    item["diferencia"] = diferencia
+
+    if abs(diferencia) >= spider.umbral:
+
+      self.writer.writerow([
+        item["producto_id"],
+        item["nombre_interno"],
+        item.get("nombre_web", ""),
+        round(
+          item["precio_interno"],
+          2
+        ),
+        round(item["precio_web"], 2),
+        diferencia,
+        spider.umbral,
+        datetime.date.today()
+      ])
+
+      self.alertas += 1
+
+    return item
+
+  def close_spider(self, spider):
+    """Cierra el CSV e informa la ubicación del archivo de alertas."""
+
+    self.archivo.close()
+
+    spider.logger.info(
+      "Alertas generadas: %s | "
+      "Archivo: %s",
+      self.alertas,
+      self.ruta_csv
+    )
+
+    print(
+      f"\nArchivo de alertas generado: "
+      f"{self.ruta_csv} "
+      f"({self.alertas} alertas)"
+    )
 
 
 class GuardarBaseDatosPipeline:
@@ -115,6 +225,11 @@ class GuardarBaseDatosPipeline:
     try:
 
       self.session.commit()
+
+      print(
+        "\n[SCRAPING] Resultados "
+        "persistidos en la base de datos."
+      )
 
     except Exception:
 
