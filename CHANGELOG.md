@@ -74,3 +74,7 @@
 ## Día 3
 - Implementación del context manager session_scope
 - Manejo de transacciones y rollback
+
+## Día 4
+- Implementación de modelos ORM
+- Relaciones entre entidades y tablas
