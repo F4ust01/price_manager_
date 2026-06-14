@@ -71,3 +71,6 @@
 ## Día 2
 - Implementación de ConexionDB
 - Configuración de SQLAlchemy
+## Día 3
+- Implementación del context manager session_scope
+- Manejo de transacciones y rollback

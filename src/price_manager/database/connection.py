@@ -1,50 +1,100 @@
 
 import os
 
+from contextlib import contextmanager
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
 class ConexionDB:
-    """Clase encargada de gestionar la conexión y las sesiones de la base de datos."""
+  """
+  Clase encargada de gestionar
+  la conexión y las sesiones
+  de la base de datos.
+  """
 
-    def __init__(self):
-        """Inicializa la configuración de la base de datos SQLite y su motor de conexión."""
+  def __init__(self):
+    """
+    Inicializa la configuración
+    de la base de datos SQLite.
+    """
 
-        # Se establece el directorio de la base de datos y se crea si no existe.
-        self.DATA_BASE_DIRECTORY = "/content/base_de_datos/"
-        os.makedirs(self.DATA_BASE_DIRECTORY, exist_ok=True)
+    # Directorio de la base de datos
+    self.DATA_BASE_DIRECTORY = (
+      "/content/base_de_datos/"
+    )
 
-        # Se define el nombre del archivo de la base de datos.
-        self.DATA_BASE_NAME = "base_str.db"
+    os.makedirs(
+      self.DATA_BASE_DIRECTORY,
+      exist_ok=True
+    )
 
-        # URL de conexión a SQLite.
-        self.database_url = (
-            f"sqlite:///{self.DATA_BASE_DIRECTORY}{self.DATA_BASE_NAME}"
-        )
+    # Nombre del archivo SQLite
+    self.DATA_BASE_NAME = (
+      "base_str.db"
+    )
 
-        # Se inicializa el motor (engine) de SQLAlchemy.
-        self.engine = create_engine(
-            self.database_url,
-            echo=False
-        )
+    # URL de conexión
+    self.database_url = (
+      f"sqlite:///"
+      f"{self.DATA_BASE_DIRECTORY}"
+      f"{self.DATA_BASE_NAME}"
+    )
 
-        # Se configura la fábrica de sesiones locales.
-        self.SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
-        )
+    # Motor SQLAlchemy
+    self.engine = create_engine(
+      self.database_url,
+      echo=False
+    )
 
-    def get_engine(self):
-        """Retorna el motor de conexión de SQLAlchemy configurado."""
-        return self.engine
+    # Fábrica de sesiones
+    self.SessionLocal = (
+      sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=self.engine
+      )
+    )
 
-    def get_session(self):
-        """
-        Crea y retorna una nueva sesión local de la base de datos.
+  def get_engine(self):
+    """
+    Retorna el engine
+    configurado.
+    """
 
-        El usuario es responsable de cerrar la sesión una vez finalizada
-        su utilización.
-        """
-        return self.SessionLocal()
+    return self.engine
+
+  def get_session(self):
+    """
+    Retorna una nueva sesión
+    de base de datos.
+    """
+
+    return self.SessionLocal()
+
+  @contextmanager
+  def session_scope(self):
+    """
+    Context manager para
+    manejar transacciones
+    automáticamente.
+    """
+
+    session = self.SessionLocal()
+
+    try:
+
+      yield session
+
+      session.commit()
+
+    except Exception:
+
+      session.rollback()
+
+      raise
+
+    finally:
+
+      session.close()
