@@ -60,3 +60,10 @@
 - Implementación de main.py
 - Punto de entrada del sistema
 - Configuración de ejecución
+
+## Sprint 2
+## Día 1
+- Creación de estructura base del proyecto
+- Configuración inicial de Git
+- Creación de entidades y carpetas principales
+-Preparación de los registros para tipos_cotizacion.csv - modificación de los datos luego de haber obtenido la info y el orden correcto de los tipos de cambio
