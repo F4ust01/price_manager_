@@ -87,3 +87,8 @@
 - Adaptación de repositories a SQLAlchemy
 - CRUD persistente utilizando sesiones
 - Adaptación main y console
+
+## Día 7
+- Integración de dotenv
+- Implementación de API de cotizaciones dólar
+- Persistencia automática de cotizaciones

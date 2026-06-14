@@ -1,141 +1,416 @@
 
-from typing import List, Optional, TypeVar, Generic
+import os
+import requests
+from datetime import date
 
-from price_manager.entities.entities import (
-  Categoria, Proveedor, Producto,
-  Stock, CotizacionDolar,
-  Moneda, TipoCotizacion
-)
+from dotenv import load_dotenv
 
-from price_manager.repositories.repositories import (
-  RepositorioCategoria,
-  RepositorioProveedor,
-  RepositorioProducto,
-  RepositorioStock,
-  RepositorioCotizacionDolar,
-  RepositorioMoneda,
-  RepositorioTipoCotizacion
+from price_manager.models.models import (
+  CotizacionDolarModel
 )
 
 
-class ServicioBase:
-  """Clase base para los servicios con operaciones CRUD"""
+# Carga de variables de entorno globales.
+load_dotenv()
 
+API_URL = os.getenv(
+  "API_URL"
+)
+
+
+class ServicioCategoria:
+  """Orquesta la lógica de negocio para la gestión de categorías."""
   def __init__(self, repo):
-    """inicializza el servicio con su repositorio correspondiente"""
+    """Inicializa el servicio vinculando su repositorio correspondiente."""
     self.repo = repo
 
-  def crear(self, entidad):
-    """Crea una nueva entidad en el repositorio"""
-    return self.repo.crear(entidad)
+  def crear(self, categoria):
+    """Registra una nueva categoría a través del repositorio."""
+    return self.repo.crear(
+      categoria
+    )
 
-  def obtener(self, id):
-    """Obtiene una entidad por su ID"""
-    entidad = self.repo.leer_por_id(id)
-    if not entidad:
-      raise ValueError("Entidad no encontrada")
-    return entidad
+  def obtener(self, id: int):
+    """Recupera una categoría específica según su identificador único."""
+    return self.repo.leer_por_id(
+      id
+    )
 
   def listar_todos(self):
-    """Obtiene una lista con todas las entidades"""
+    """Retorna todas las categorías registradas en la base de datos."""
     return self.repo.leer_todos()
 
-  def actualizar(self, entidad):
-    """Actualiza una entidad existente en el repositorio"""
-    return self.repo.actualizar(entidad)
+  def actualizar(self, categoria):
+    """Actualiza los datos de una categoría previamente registrada."""
+    return self.repo.actualizar(
+      categoria
+    )
 
-  def eliminar(self, id):
-    """Elimina una entidad por su ID"""
-    if not self.repo.eliminar(id):
-      raise ValueError("Entidad no encontrada")
-
-
-"""Implementacion de los servicios para cada entidad"""
-
-class ServicioCategoria(ServicioBase): pass
-"""servicios especializados para la gestion de la entidad categoria"""
-
-class ServicioProveedor(ServicioBase): pass
-"""servicios especializados para la gestion de la entidad proveedor"""
-
-class ServicioMoneda(ServicioBase): pass
-"""servicios especializados para la gestion de la entidad moneda"""
-
-class ServicioTipoCotizacion(ServicioBase): pass
-"""servicios especializados para la gestion de la entidad tipoCotizacion"""
+  def eliminar(self, id: int):
+    """Remueve una categoría del sistema mediante su identificador."""
+    return self.repo.eliminar(
+      id
+    )
 
 
+class ServicioProveedor:
+  """Orquesta la lógica de negocio para la gestión de proveedores."""
 
-class ServicioProducto(ServicioBase):
-  """Servicio especializado para la gestión de la entidad producto
-  con su validacion donde se asegura que este vinculado a una categoria y proveedor valido """
+  def __init__(self, repo):
+    """Inicializa el servicio vinculando su repositorio correspondiente."""
+    self.repo = repo
 
-  def __init__(self, repo: RepositorioProducto,
-               srv_cat: ServicioCategoria,
-               srv_prov: ServicioProveedor):
+  def crear(self, proveedor):
+    """Registra un nuevo proveedor a través del repositorio."""
+    return self.repo.crear(
+      proveedor
+    )
 
-    super().__init__(repo)
-    self.srv_cat = srv_cat
-    self.srv_prov = srv_prov
+  def obtener(self, id: int):
+    """Recupera un proveedor específico según su identificador único."""
+    return self.repo.leer_por_id(
+      id
+    )
 
-  def crear(self, producto: Producto) -> Producto:
-    """Crea un nuevo producto en el repositorio validando la existencia de las relaciones"""
-    self.srv_cat.obtener(producto.categoria.id)
-    self.srv_prov.obtener(producto.proveedor.id)
+  def listar_todos(self):
+    """Retorna el listado completod e proveedores existentes."""
+    return self.repo.leer_todos()
 
-    return self.repo.crear(producto)
+  def actualizar(self, proveedor):
+    """Actualiza los datos de un proveedor previamente registrado."""
+    return self.repo.actualizar(
+      proveedor
+    )
+
+  def eliminar(self, id: int):
+    """Remueve un proveedor del sistema mediante su identificador."""
+    return self.repo.eliminar(
+      id
+    )
+
+
+
+class ServicioProducto:
+  """Administra las reglas de negocio y validaciones para los productos."""
+  def __init__(
+    self,
+    repo,
+    srv_categoria,
+    srv_proveedor
+  ):
+    """Inicializa el servicio vinculando sus repositorios y servicios correspondientes."""
+    self.repo = repo
+
+    self.srv_categoria = (
+      srv_categoria
+    )
+
+    self.srv_proveedor = (
+      srv_proveedor
+    )
+
+  def crear(self, producto):
+    """Valida las relaciones jerárquicas y registra un nuevo producto."""
+    categoria = (
+      self.srv_categoria.obtener(
+        producto.categoria_id
+      )
+    )
+
+    if not categoria:
+
+      raise ValueError(
+        "La categoria no existe"
+      )
+
+    proveedor = (
+      self.srv_proveedor.obtener(
+        producto.proveedor_id
+      )
+    )
+
+    if not proveedor:
+
+      raise ValueError(
+        "El proveedor no existe"
+      )
+
+    return self.repo.crear(
+      producto
+    )
+
+  def obtener(self, id: int):
+    """Recupera un producto específico según su identificador único."""
+    return self.repo.leer_por_id(
+      id
+    )
+
+  def listar_todos(self):
+    """Retorna el listado completod de productos existentes."""
+    return self.repo.leer_todos()
+
+  def actualizar(self, producto):
+    """Actualiza los datos de un producto previamente registrado."""
+    return self.repo.actualizar(
+      producto
+    )
+
+  def eliminar(self, id: int):
+    """Remueve un producto del sistema mediante su identificador."""
+    return self.repo.eliminar(
+      id
+    )
+
+class ServicioMoneda:
+  """Orquesta la lógica de negocio para la gestión de monedas."""
+  def __init__(self, repo):
+    """Inicializa el servicio vinculando su repositorio correspondiente."""
+    self.repo = repo
+
+  def crear(self, moneda):
+    """Registra una nueva moneda en el sistema."""
+    return self.repo.crear(
+      moneda
+    )
+
+  def obtener(self, id: int):
+    """Recupera una moneda específica según su identificador único."""
+    return self.repo.leer_por_id(
+      id
+    )
+
+  def listar_todos(self):
+    """Retorna el listado completod de monedas existentes."""
+    return self.repo.leer_todos()
+
+  def actualizar(self, moneda):
+    """Actualiza los datos de una moneda previamente registrada."""
+    return self.repo.actualizar(
+      moneda
+    )
+
+  def eliminar(self, id: int):
+    """Remueve una moneda del sistema mediante su identificador."""
+    return self.repo.eliminar(
+      id
+    )
+
 
 class ServicioStock:
-  """Servicio especializado para la gestión de la entidad stock"""
+  """Valida y administra los niveles de inventario de los productos."""
 
-  def __init__(self, repo: RepositorioStock,
-               srv_prod: ServicioProducto):
+  def __init__(
+    self,
+    repo,
+    srv_producto
+  ):
+    """Inicializa el servicio vinculando el repositorio y el servicio de productos."""
+
     self.repo = repo
-    self.srv_prod = srv_prod
 
-  def registrar_movimiento(self, producto_id: int,
-                           cantidad: int):
-    """Registra un movimiento de stock para un producto especifico
-    si el movimiento resulta en existencias negativas lanza un error"""
+    self.srv_producto = (
+      srv_producto
+    )
 
-    producto = self.srv_prod.obtener(producto_id)
-    stock = self.repo.leer_por_producto(producto_id)
+  def crear(self, stock):
+    """Valida la existencia del producto y registra su stock inicial."""
+    producto = (
+      self.srv_producto.obtener(
+        stock.producto_id
+      )
+    )
 
-    if not stock:
-      """ Inicia de manera automatica un stock de 0 para los productos que no tengan uno"""
-      stock = Stock(producto, 0, "default")
-      self.repo.crear(stock)
+    if not producto:
 
-    nuevo = stock.cantidad + cantidad
+      raise ValueError(
+        "El producto no existe"
+      )
 
-    if nuevo < 0:
-      raise ValueError("Stock negativo")
+    return self.repo.crear(
+      stock
+    )
 
-    stock.cantidad = nuevo
-    self.repo.actualizar(stock)
+  def obtener_por_producto(
+    self,
+    producto_id: int
+  ):
+    """Recupera el registro de inventario asociado a un producto."""
 
-  def obtener_stock(self, producto_id: int) -> int:
-    """Obtiene el stock de un producto especifico"""
-    stock = self.repo.leer_por_producto(producto_id)
-    return stock.cantidad if stock else 0
+    return self.repo.leer_por_producto(
+      producto_id
+    )
+
+  def listar_todos(self):
+    """Retorna el listado completo de productos existentes."""
+    return self.repo.leer_todos()
+
+  def actualizar(self, stock):
+    """Actualiza los datos de un stock previamente registrado."""
+    return self.repo.actualizar(
+      stock
+    )
+
+  def eliminar(
+    self,
+    producto_id: int
+  ):
+    """Remueve el control de stock asociado a un identificador de producto."""
+
+    return self.repo.eliminar(
+      producto_id
+    )
+
+
+
+class ServicioTipoCotizacion:
+  """Gestiona los catálogos y clasificaciones de tipos de cotizaciones."""
+
+
+  def __init__(self, repo):
+    """Inicializa el servicio vinculando su repositorio correspondiente."""
+    self.repo = repo
+
+  def crear(self, tipo):
+    """Registra un nuevo tipo de cotización."""
+    return self.repo.crear(
+      tipo
+    )
+
+  def obtener(self, id: int):
+    """Recupera un tipo de cotización específico según su identificador único."""
+    return self.repo.leer_por_id(
+      id
+    )
+
+  def listar_todos(self):
+    """Retorna el listado completo de tipos de cotización existentes."""
+    return self.repo.leer_todos()
+
 
 class ServicioCotizacionDolar:
-  """Servicio especializado para la gestión de la entidad cotizacionDolar"""
-  def __init__(self, repo: RepositorioCotizacionDolar,
-               tipo_repo: RepositorioTipoCotizacion):
+  """
+  Servicio especializado para la gestión y actualización de cotizaciones.
+
+  Centraliza las interacciones transaccionales del historial del dólar,
+  incluyendo la consulta sincrónica a plataformas de datos externas.
+  """
+
+  def __init__(
+    self,
+    repo,
+    tipo_repo
+  ):
+    """Inicializa el servicio vinculando ñps repositorios requeridos."""
 
     self.repo = repo
-    self.tipo_repo = tipo_repo
 
-  def registrar_cotizacion(self, cotizacion: CotizacionDolar):
-    """Añade una nueva cotización en el repositorio"""
-    return self.repo.crear(cotizacion)
+    self.tipo_repo = (
+      tipo_repo
+    )
 
-  def obtener_historico(self, tipo_id: int) -> List[CotizacionDolar]:
-    """Obtiene el historico de cotizaciones de un tipo especifico"""
+  def registrar_cotizacion(
+    self,
+    cotizacion
+  ):
+    """Registra una nueva cotización en la base de datos."""
 
-    tipo = self.tipo_repo.leer_por_id(tipo_id)
+    return self.repo.crear(
+      cotizacion
+    )
+
+  def obtener_historico(
+    self,
+    tipo_id: int
+  ):
+    """Retorna la serie cronológica de valores para un tipo de cotización."""
+
+    tipo = (
+      self.tipo_repo.leer_por_id(
+        tipo_id
+      )
+    )
+
     if not tipo:
-      raise ValueError("Tipo no existe")
 
-    return self.repo.leer_historico_por_tipo(tipo)
+      raise ValueError(
+        "Tipo no existe"
+      )
+
+    return (
+      self.repo.leer_historico_por_tipo(
+        tipo_id
+      )
+    )
+
+  def obtener_cotizaciones(self):
+    """
+    Sincroniza y guarda en la base de datos las cotizaciones desde la API.
+
+    Realiza una petición HTTP hacia el endpoint configurado, empareja las
+    entidades devueltas según su equivalencia semántica y persiste los
+    nuevos valores de venta registrados para la fecha actual.
+    """
+
+    if not API_URL:
+
+      raise ValueError(
+        "La API_URL no está definida en .env"
+      )
+
+    response = requests.get(
+      API_URL,
+      timeout=10
+    )
+
+    response.raise_for_status()
+
+    datos = response.json()
+
+    tipos = (
+      self.tipo_repo.leer_todos()
+    )
+
+    for d in datos:
+
+      venta = d.get(
+        "venta"
+      )
+
+      if venta is None:
+
+        continue
+
+      nombre_tipo = d.get(
+        "nombre"
+      )
+
+      tipo_existente = None
+
+      for t in tipos:
+
+        if (
+          t.nombre.lower()
+          ==
+          nombre_tipo.lower()
+        ):
+
+          tipo_existente = t
+          break
+
+      if not tipo_existente:
+
+        continue
+
+      cotizacion = (
+        CotizacionDolarModel(
+          valor=float(venta),
+          fecha=date.today(),
+          tipo_id=tipo_existente.id
+        )
+      )
+
+      self.repo.crear(
+        cotizacion
+      )
+
+    return True
