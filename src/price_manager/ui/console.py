@@ -1,4 +1,5 @@
 
+import csv
 import datetime
 
 from price_manager.database.connection import ConexionDB
@@ -38,11 +39,11 @@ from price_manager.services.services import (
 
 def init_app():
   """
-  Inicializa el entorno de la aplicación web o de consola.
+    Inicializa el entorno de la aplicación de consola.
 
-  Construye la sesión de la base de datos, instancia todos los repositorios
-  y configura la inyección de dependencias para las clases de servicios.
-  """
+    Construye la sesión de la base de datos, instancia todos los repositorios
+    y configura la inyección de dependencias para las clases de servicios.
+    """
   db = ConexionDB()
   session = db.get_session()
 
@@ -88,7 +89,7 @@ def init_app():
   )
 
 
-# Interfaces de menús y paneles de visualización.
+#Interfaces de menús y paneles de visualización.
 
 def menu_principal():
   """Muestra en la terminal las opciones principales de navegación."""
@@ -96,9 +97,12 @@ def menu_principal():
   print("1. Productos")
   print("2. Stock")
   print("3. Cotizaciones")
+  print("4. Obtener cotizaciones por API")
+  print("5. Ver lista de precios bimonetaria")
+  print("6. Exportar precios a CSV")
   print("0. Salir")
 
-#Gestiona el submenú operativo y de creación para los productos.
+
 
 def menu_productos(
   srv_prod,
@@ -106,7 +110,7 @@ def menu_productos(
   srv_prov,
   srv_mon
 ):
-
+  """Gestiona el submenú operativo y de creación para los productos."""
   while True:
 
     print("\n--- Productos ---")
@@ -204,12 +208,12 @@ def menu_stock(srv_stock):
     elif op == "0":
       break
 
-#Administra el submenú de revisión del historial cambiario.
 
 def menu_cotizaciones(
   srv_cot,
   srv_tipo
 ):
+  """Administra el submenú de revisión del historial cambiario."""
 
   while True:
 
@@ -240,6 +244,179 @@ def menu_cotizaciones(
 
     elif op == "0":
       break
+
+
+# Integraciones y procedimientos del Ejercicio.
+
+def obtener_cotizaciones_api(srv_cot):
+  """Consulta y persiste las cotizaciones actuales desde la API externa."""
+
+  print("\nConsultando API de cotizaciones...")
+
+  try:
+
+    srv_cot.obtener_cotizaciones()
+
+    print("Cotizaciones actualizadas correctamente.")
+
+  except Exception as error:
+
+    print(f"Error al obtener cotizaciones: {error}")
+
+
+def ver_lista_bimonetaria(
+  srv_prod,
+  srv_cot,
+  srv_tipo
+):
+  """
+  Muestra los precios de los productos en pesos y dólares en la terminal.
+
+  Calcula la equivalencia bimonetaria utilizando la última cotización
+  disponible del catálogo correspondiente al identificador seleccionado.
+  """
+
+  tipos = srv_tipo.listar_todos()
+
+  if not tipos:
+    print("\nNo hay tipos de cotización registrados.")
+    return
+
+  print("\n--- Tipos de cotización disponibles ---")
+
+  for t in tipos:
+    print(t.id, t.nombre)
+
+  tipo_id = int(input("\nSeleccione Tipo ID: "))
+
+  try:
+
+    historico = srv_cot.obtener_historico(tipo_id)
+
+  except ValueError as error:
+
+    print(f"Error: {error}")
+    return
+
+  if not historico:
+    print("\nNo hay cotizaciones para ese tipo.")
+    return
+
+  # Se obtiene el registro de cotización más reciente de la colección.
+  ultima = sorted(
+    historico,
+    key=lambda c: c.fecha,
+    reverse=True
+  )[0]
+
+  dolar = ultima.valor
+
+  productos = srv_prod.listar_todos()
+
+  print(f"\nCotización usada: ${dolar:.2f} (al {ultima.fecha})")
+  print("-" * 60)
+
+  for p in productos:
+
+    ars = p.precio.valor if p.precio else 0
+
+    usd = ars / dolar if dolar > 0 else 0
+
+    print(
+      f"{p.nombre} | "
+      f"ARS ${ars:.2f} | "
+      f"USD {usd:.2f}"
+    )
+
+
+def exportar_precios_csv(
+  srv_prod,
+  srv_cot,
+  srv_tipo
+):
+  """
+  Exporta la lista de precios consolidada a un archivo en formato CSV.
+
+  Genera una matriz de columnas dinámicas que calcula los precios de cada
+  producto tanto en pesos argentinos como en cada tipo de dólar disponible.
+  """
+
+  productos = srv_prod.listar_todos()
+  tipos = srv_tipo.listar_todos()
+
+  # Obtener la última cotización por cada tipo.
+  cotizaciones = {}
+
+  for tipo in tipos:
+
+    try:
+
+      historico = srv_cot.obtener_historico(tipo.id)
+
+    except ValueError:
+
+      continue
+
+    if historico:
+
+      ultima = sorted(
+        historico,
+        key=lambda c: c.fecha,
+        reverse=True
+      )[0]
+
+      cotizaciones[tipo.nombre] = ultima.valor
+
+  nombre_archivo = (
+    f"lista_precios_{datetime.date.today()}.csv"
+  )
+
+  try:
+
+    with open(
+      nombre_archivo,
+      mode="w",
+      newline="",
+      encoding="utf-8"
+    ) as archivo:
+
+      writer = csv.writer(archivo)
+
+      # Encabezados dinámicos según tipos de cotización.
+      encabezados = ["ID", "Producto", "Precio ARS"]
+      encabezados.extend(
+        [f"USD {nombre}" for nombre in cotizaciones.keys()]
+      )
+
+      writer.writerow(encabezados)
+
+      for p in productos:
+
+        precio_ars = p.precio.valor if p.precio else 0
+
+        fila = [
+          p.id,
+          p.nombre,
+          round(precio_ars, 2)
+        ]
+
+        for valor_tipo in cotizaciones.values():
+
+          precio_usd = (
+            precio_ars / valor_tipo
+            if valor_tipo > 0
+            else 0
+          )
+
+          fila.append(round(precio_usd, 2))
+
+        writer.writerow(fila)
+
+    print(f"\nCSV exportado correctamente: {nombre_archivo}")
+
+  except Exception as error:
+
+    print(f"\nError al exportar CSV: {error}")
 
 
 # Bucle de control principal de la aplicación.
@@ -280,6 +457,28 @@ def run():
     elif op == "3":
 
       menu_cotizaciones(
+        srv_cot,
+        srv_tipo
+      )
+
+    elif op == "4":
+
+      obtener_cotizaciones_api(
+        srv_cot
+      )
+
+    elif op == "5":
+
+      ver_lista_bimonetaria(
+        srv_prod,
+        srv_cot,
+        srv_tipo
+      )
+
+    elif op == "6":
+
+      exportar_precios_csv(
+        srv_prod,
         srv_cot,
         srv_tipo
       )

@@ -92,3 +92,7 @@
 - Integración de dotenv
 - Implementación de API de cotizaciones dólar
 - Persistencia automática de cotizaciones
+## Día 8
+- Actualización del menú principal
+- Exportación de datos
+- Correcciones generales y limpieza del proyecto
