@@ -82,3 +82,8 @@
 ## Día 5
 - Migración de datos CSV hacia SQLite
 - Generación de scripts SQL
+
+## Día 6
+- Adaptación de repositories a SQLAlchemy
+- CRUD persistente utilizando sesiones
+- Adaptación main y console
