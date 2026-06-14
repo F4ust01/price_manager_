@@ -1,13 +1,21 @@
 
+import datetime
 import json
 import os
 import subprocess
 import sys
 
+from openpyxl import Workbook
+from openpyxl.styles import Font
+
 from price_manager.models.models import (
-  ProductoModel,
   CotizacionDolarModel,
+  ProductoModel,
   ResultadoScrapingModel
+)
+
+from price_manager.services.auditoria import (
+  auditar
 )
 
 # Rutas del proyecto calculadas desde la ubicación de este módulo.
@@ -24,6 +32,11 @@ RUTA_SCRAPER = os.path.join(
 
 RUTA_SRC = os.path.dirname(
   RUTA_PAQUETE
+)
+
+# Carpeta donde se depositan los archivos descargables del sistema.
+RUTA_REPORTES = (
+  "/content/price_manager/reportes"
 )
 
 
@@ -139,6 +152,31 @@ class ServicioScraper:
       ResultadoScrapingModel
     ).count()
 
+  def _mostrar_log(
+    self,
+    registro: str,
+    filtro: str = "",
+    ultimas: int = 0
+  ) -> None:
+    """Imprime líneas del log del spider, con filtro o tope opcionales."""
+
+    lineas = registro.split("\n")
+
+    if filtro:
+      lineas = [l for l in lineas if filtro in l]
+
+    if ultimas:
+      lineas = lineas[-ultimas:]
+
+    if not lineas:
+      print("  (sin información disponible)")
+      return
+
+    for linea in lineas:
+      inicio = linea.find(filtro) if filtro else 0
+      print(f"  {linea[inicio:]}")
+
+  @auditar("ejecutar_scraping")
   def ejecutar_scraping(
     self,
     umbral: float
@@ -275,48 +313,6 @@ class ServicioScraper:
 
     return True
 
-  def _mostrar_log(
-    self,
-    registro: str,
-    filtro: str = "",
-    ultimas: int = 0
-  ) -> None:
-    """Imprime líneas del log del spider, con filtro o tope opcionales."""
-
-    lineas = registro.split("\n")
-
-    if filtro:
-      lineas = [l for l in lineas if filtro in l]
-
-    if ultimas:
-      lineas = lineas[-ultimas:]
-
-    if not lineas:
-      print("  (sin información disponible)")
-      return
-
-    for linea in lineas:
-      inicio = linea.find(filtro) if filtro else 0
-      print(f"  {linea[inicio:]}")
-
-
-# =========================================
-# REPORTE COMPARATIVO EN EXCEL
-# =========================================
-
-from openpyxl import Workbook
-from openpyxl.styles import Font
-
-from price_manager.models.models import (
-  ResultadoScrapingModel
-)
-
-import datetime
-
-RUTA_REPORTES = (
-  "/content/price_manager/reportes"
-)
-
 
 class ServicioReporte:
   """Genera el reporte comparativo de precios en formato Excel."""
@@ -326,6 +322,7 @@ class ServicioReporte:
 
     self.session = session
 
+  @auditar("generar_reporte_excel")
   def generar_reporte_excel(self) -> str:
     """
     Crea un archivo .xlsx con la comparativa interna contra la web.

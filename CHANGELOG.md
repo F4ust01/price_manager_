@@ -1,3 +1,10 @@
+[Ejercicio 6]
+- Decorador auditar para el registro de auditorías del sistema
+- Tabla auditoria con acción, fecha y detalles
+- Auditoría aplicada al CRUD de todos los repositorios
+- Auditoría del scraping y de la generación de reportes
+- Repositorios de auditoría y de resultados de scraping
+
 [Ejercicio 5]
 - ServicioReporte: reporte Excel comparativo con openpyxl
 - Columnas: Producto, Precio interno, Precio web, Diferencia y Fecha de extracción
