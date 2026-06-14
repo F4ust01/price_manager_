@@ -5,6 +5,7 @@ from sqlalchemy import (
   String,
   Float,
   Date,
+  DateTime,
   ForeignKey
 )
 
@@ -149,6 +150,10 @@ class ProductoModel(Base):
     uselist=False
   )
 
+  resultados_scraping = relationship(
+    "ResultadoScrapingModel",
+    back_populates="producto"
+  )
 
 class StockModel(Base):
   """Monitorea las existencias físicas de cada producto por almacén."""
@@ -192,3 +197,33 @@ class CotizacionDolarModel(Base):
     "TipoCotizacionModel",
     back_populates="cotizaciones"
   )
+
+
+class ResultadoScrapingModel(Base):
+  """Almacena cada precio de la competencia obtenido por el scraper."""
+
+  __tablename__ = "resultados_scraping"
+
+  id = Column(Integer, primary_key=True)
+
+  producto_id = Column(
+    Integer,
+    ForeignKey("productos.id"),
+    nullable=False
+  )
+
+  nombre_web = Column(String(255), nullable=False)
+  precio_interno = Column(Float, nullable=False)
+  precio_web = Column(Float, nullable=False)
+  diferencia = Column(Float, nullable=False)
+  url_img = Column(String(500), nullable=True)
+  formas_pago = Column(String(1000), nullable=True)
+  descripcion = Column(String(2000), nullable=True)
+  url_extraccion = Column(String(500), nullable=True)
+  fecha_extraccion = Column(DateTime, nullable=False)
+
+  producto = relationship(
+    "ProductoModel",
+    back_populates="resultados_scraping"
+  )
+

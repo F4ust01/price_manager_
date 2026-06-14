@@ -1,3 +1,10 @@
+[Ejercicio 3]
+- Implementación de StarComputacionSpider con Scrapy
+- Loaders con procesadores de limpieza y parseo de precios
+- Pipelines de validación y persistencia en base de datos
+- Nuevo modelo ResultadoScrapingModel para persistir resultados del scraping
+- Límite de 10 resultados por búsqueda y solo productos propios
+
 [Ejercicio 2]
 - Implementación de cargar_datos_desde_sql en migrations.py
 
