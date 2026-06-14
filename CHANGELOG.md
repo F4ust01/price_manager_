@@ -67,3 +67,7 @@
 - Configuración inicial de Git
 - Creación de entidades y carpetas principales
 -Preparación de los registros para tipos_cotizacion.csv - modificación de los datos luego de haber obtenido la info y el orden correcto de los tipos de cambio
+
+## Día 2
+- Implementación de ConexionDB
+- Configuración de SQLAlchemy
