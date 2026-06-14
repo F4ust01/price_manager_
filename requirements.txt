@@ -1,0 +1,5 @@
+sqlalchemy
+requests
+python-dotenv
+scrapy
+openpyxl

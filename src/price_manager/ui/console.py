@@ -10,9 +10,7 @@ from price_manager.models.models import (
   ProductoModel,
   PrecioModel,
   MonedaModel,
-  StockModel,
-  TipoCotizacionModel,
-  CotizacionDolarModel
+  StockModel
 )
 
 from price_manager.repositories.repositories import (
@@ -22,7 +20,8 @@ from price_manager.repositories.repositories import (
   RepositorioMoneda,
   RepositorioStock,
   RepositorioTipoCotizacion,
-  RepositorioCotizacionDolar
+  RepositorioCotizacionDolar,
+  RepositorioAuditoria
 )
 
 from price_manager.services.services import (
@@ -35,15 +34,23 @@ from price_manager.services.services import (
   ServicioCotizacionDolar
 )
 
+from price_manager.services.scraping_services import (
+  ServicioScraper,
+  ServicioReporte
+)
+
+
 # Inicialización y configuración de dependencias de la aplicación.
 
-def init_app():
+def init_app() -> dict:
   """
-    Inicializa el entorno de la aplicación de consola.
+  Inicializa el entorno de la aplicación de consola.
 
-    Construye la sesión de la base de datos, instancia todos los repositorios
-    y configura la inyección de dependencias para las clases de servicios.
-    """
+  Construye la sesión de la base de datos, instancia los repositorios
+  y configura la inyección de dependencias para los servicios. Retorna
+  un diccionario con todos los servicios disponibles.
+  """
+
   db = ConexionDB()
   session = db.get_session()
 
@@ -55,6 +62,7 @@ def init_app():
   repo_stock = RepositorioStock(session)
   repo_tipo = RepositorioTipoCotizacion(session)
   repo_cot = RepositorioCotizacionDolar(session)
+  repo_aud = RepositorioAuditoria(session)
 
   # Servicios
   srv_cat = ServicioCategoria(repo_cat)
@@ -78,56 +86,69 @@ def init_app():
     repo_tipo
   )
 
-  return (
-    srv_cat,
-    srv_prov,
-    srv_prod,
-    srv_stock,
-    srv_cot,
-    srv_mon,
-    srv_tipo
-  )
+  return {
+    "cat": srv_cat,
+    "prov": srv_prov,
+    "prod": srv_prod,
+    "mon": srv_mon,
+    "stock": srv_stock,
+    "tipo": srv_tipo,
+    "cot": srv_cot,
+    "scraper": ServicioScraper(session),
+    "reporte": ServicioReporte(session),
+    "auditoria": repo_aud
+  }
 
 
-#Interfaces de menús y paneles de visualización.
+# Interfaces de menús y paneles de visualización.
 
-def menu_principal():
+def menu_principal() -> None:
   """Muestra en la terminal las opciones principales de navegación."""
   print("\n=== PRICE MANAGER ===")
   print("1. Productos")
   print("2. Stock")
   print("3. Cotizaciones")
-  print("4. Obtener cotizaciones por API")
-  print("5. Ver lista de precios bimonetaria")
-  print("6. Exportar precios a CSV")
+  print("4. Catálogos (categorías/proveedores/monedas)")
+  print("5. Obtener cotizaciones por API")
+  print("6. Ver lista de precios bimonetaria")
+  print("7. Exportar precios a CSV")
+  print("8. Ejecutar scraping")
+  print("9. Generar reporte")
+  print("10. Ver historial de auditoría")
   print("0. Salir")
 
 
+def menu_productos(ctx: dict) -> None:
+  """Gestiona el submenú con el CRUD completo de los productos."""
 
-def menu_productos(
-  srv_prod,
-  srv_cat,
-  srv_prov,
-  srv_mon
-):
-  """Gestiona el submenú operativo y de creación para los productos."""
+  srv_prod = ctx["prod"]
+  srv_cat = ctx["cat"]
+  srv_prov = ctx["prov"]
+  srv_mon = ctx["mon"]
+
   while True:
 
     print("\n--- Productos ---")
     print("1. Listar")
     print("2. Crear")
+    print("3. Modificar")
+    print("4. Eliminar")
     print("0. Volver")
 
     op = input("Opción: ")
 
     if op == "1":
 
-      productos = srv_prod.listar_todos()
-
-      for p in productos:
+      for p in srv_prod.listar_todos():
+        precio = (
+          p.precio.valor
+          if p.precio
+          else 0
+        )
         print(
           p.id,
-          p.nombre
+          p.nombre,
+          f"${precio:.2f}"
         )
 
     elif op == "2":
@@ -137,31 +158,28 @@ def menu_productos(
       valor = float(input("Precio: "))
 
       print("\nMonedas:")
-      monedas = srv_mon.listar_todos()
-
-      for m in monedas:
+      for m in srv_mon.listar_todos():
         print(m.id, m.nombre)
 
-      moneda_id = int(input("Moneda ID: "))
-      moneda = srv_mon.obtener(moneda_id)
+      moneda = srv_mon.obtener(
+        int(input("Moneda ID: "))
+      )
 
       print("\nCategorías:")
-      categorias = srv_cat.listar_todos()
-
-      for c in categorias:
+      for c in srv_cat.listar_todos():
         print(c.id, c.nombre)
 
-      categoria_id = int(input("Categoria ID: "))
-      categoria = srv_cat.obtener(categoria_id)
+      categoria = srv_cat.obtener(
+        int(input("Categoría ID: "))
+      )
 
       print("\nProveedores:")
-      proveedores = srv_prov.listar_todos()
+      for pr in srv_prov.listar_todos():
+        print(pr.id, pr.nombre)
 
-      for p in proveedores:
-        print(p.id, p.nombre)
-
-      proveedor_id = int(input("Proveedor ID: "))
-      proveedor = srv_prov.obtener(proveedor_id)
+      proveedor = srv_prov.obtener(
+        int(input("Proveedor ID: "))
+      )
 
       precio = PrecioModel(
         valor=valor,
@@ -181,39 +199,124 @@ def menu_productos(
 
       print("Producto creado correctamente")
 
+    elif op == "3":
+
+      producto = srv_prod.obtener(
+        int(input("ID a modificar: "))
+      )
+
+      if not producto:
+        print("Producto inexistente")
+        continue
+
+      nombre = input(
+        f"Nombre [{producto.nombre}]: "
+      )
+
+      if nombre:
+        producto.nombre = nombre
+
+      descripcion = input(
+        f"Descripción "
+        f"[{producto.descripcion}]: "
+      )
+
+      if descripcion:
+        producto.descripcion = descripcion
+
+      valor = input(
+        f"Precio "
+        f"[{producto.precio.valor}]: "
+      )
+
+      if valor:
+        producto.precio.valor = float(valor)
+        producto.precio.fecha = (
+          datetime.date.today()
+        )
+
+      srv_prod.actualizar(producto)
+
+      print("Producto actualizado")
+
+    elif op == "4":
+
+      if srv_prod.eliminar(
+        int(input("ID a eliminar: "))
+      ):
+        print("Producto eliminado")
+      else:
+        print("Producto inexistente")
+
     elif op == "0":
       break
 
 
-def menu_stock(srv_stock):
-  """Controla el submenú de visualización de inventario físico."""
+def menu_stock(ctx: dict) -> None:
+  """Controla el submenú de gestión del inventario físico."""
+
+  srv_stock = ctx["stock"]
+
   while True:
 
     print("\n--- Stock ---")
     print("1. Ver stock")
+    print("2. Actualizar cantidad")
     print("0. Volver")
 
     op = input("Opción: ")
 
     if op == "1":
 
-      stocks = srv_stock.listar_todos()
-
-      for s in stocks:
+      for s in srv_stock.listar_todos():
         print(
           s.producto_id,
-          s.cantidad
+          s.producto.nombre,
+          s.cantidad,
+          s.almacen
         )
+
+    elif op == "2":
+
+      stock = (
+        srv_stock.obtener_por_producto(
+          int(input("Producto ID: "))
+        )
+      )
+
+      if not stock:
+        print("Stock inexistente")
+        continue
+
+      cantidad = int(
+        input(
+          f"Cantidad "
+          f"[{stock.cantidad}]: "
+        )
+      )
+
+      if cantidad < 0:
+        print(
+          "La cantidad no puede "
+          "ser negativa"
+        )
+        continue
+
+      stock.cantidad = cantidad
+
+      srv_stock.actualizar(stock)
+
+      print("Stock actualizado")
 
     elif op == "0":
       break
 
 
-def menu_cotizaciones(
-  srv_cot,
-  srv_tipo
-):
+def menu_cotizaciones(ctx: dict) -> None:
   """Administra el submenú de revisión del historial cambiario."""
+
+  srv_cot = ctx["cot"]
+  srv_tipo = ctx["tipo"]
 
   while True:
 
@@ -225,37 +328,158 @@ def menu_cotizaciones(
 
     if op == "1":
 
-      tipos = srv_tipo.listar_todos()
-
-      for t in tipos:
+      for t in srv_tipo.listar_todos():
         print(t.id, t.nombre)
 
-      tipo_id = int(input("Tipo ID: "))
-
-      historico = srv_cot.obtener_historico(
-        tipo_id
+      historico = (
+        srv_cot.obtener_historico(
+          int(input("Tipo ID: "))
+        )
       )
 
       for c in historico:
-        print(
-          c.fecha,
-          c.valor
-        )
+        print(c.fecha, c.valor)
 
     elif op == "0":
       break
 
 
-# Integraciones y procedimientos del Ejercicio.
+def abm_generico(
+  srv,
+  nombre_entidad: str,
+  campos: list,
+  constructor
+) -> None:
+  """
+  Submenú genérico de altas, bajas y modificaciones de catálogos.
 
-def obtener_cotizaciones_api(srv_cot):
+  Reutiliza la misma lógica para categorías, proveedores y monedas,
+  evitando duplicar código de menús con estructura idéntica.
+  """
+
+  while True:
+
+    print(f"\n--- {nombre_entidad} ---")
+    print("1. Listar")
+    print("2. Crear")
+    print("3. Modificar")
+    print("4. Eliminar")
+    print("0. Volver")
+
+    op = input("Opción: ")
+
+    if op == "1":
+
+      for entidad in srv.listar_todos():
+        valores = [
+          getattr(entidad, campo)
+          for campo in campos
+        ]
+        print(entidad.id, *valores)
+
+    elif op == "2":
+
+      datos = {
+        campo: input(f"{campo}: ")
+        for campo in campos
+      }
+
+      srv.crear(constructor(**datos))
+
+      print(f"{nombre_entidad} creado/a")
+
+    elif op == "3":
+
+      entidad = srv.obtener(
+        int(input("ID a modificar: "))
+      )
+
+      if not entidad:
+        print("Registro inexistente")
+        continue
+
+      for campo in campos:
+
+        actual = getattr(entidad, campo)
+
+        nuevo = input(
+          f"{campo} [{actual}]: "
+        )
+
+        if nuevo:
+          setattr(entidad, campo, nuevo)
+
+      srv.actualizar(entidad)
+
+      print("Registro actualizado")
+
+    elif op == "4":
+
+      if srv.eliminar(
+        int(input("ID a eliminar: "))
+      ):
+        print("Registro eliminado")
+      else:
+        print("Registro inexistente")
+
+    elif op == "0":
+      break
+
+
+def menu_catalogos(ctx: dict) -> None:
+  """Agrupa los ABM de las entidades de catálogo del sistema."""
+
+  while True:
+
+    print("\n--- Catálogos ---")
+    print("1. Categorías")
+    print("2. Proveedores")
+    print("3. Monedas")
+    print("0. Volver")
+
+    op = input("Opción: ")
+
+    if op == "1":
+
+      abm_generico(
+        ctx["cat"],
+        "Categorías",
+        ["nombre"],
+        CategoriaModel
+      )
+
+    elif op == "2":
+
+      abm_generico(
+        ctx["prov"],
+        "Proveedores",
+        ["nombre", "contacto"],
+        ProveedorModel
+      )
+
+    elif op == "3":
+
+      abm_generico(
+        ctx["mon"],
+        "Monedas",
+        ["nombre"],
+        MonedaModel
+      )
+
+    elif op == "0":
+      break
+
+
+# Integraciones y procedimientos de los ejercicios.
+
+def obtener_cotizaciones_api(ctx: dict) -> None:
   """Consulta y persiste las cotizaciones actuales desde la API externa."""
 
   print("\nConsultando API de cotizaciones...")
 
   try:
 
-    srv_cot.obtener_cotizaciones()
+    ctx["cot"].obtener_cotizaciones()
 
     print("Cotizaciones actualizadas correctamente.")
 
@@ -264,17 +488,17 @@ def obtener_cotizaciones_api(srv_cot):
     print(f"Error al obtener cotizaciones: {error}")
 
 
-def ver_lista_bimonetaria(
-  srv_prod,
-  srv_cot,
-  srv_tipo
-):
+def ver_lista_bimonetaria(ctx: dict) -> None:
   """
   Muestra los precios de los productos en pesos y dólares en la terminal.
 
   Calcula la equivalencia bimonetaria utilizando la última cotización
   disponible del catálogo correspondiente al identificador seleccionado.
   """
+
+  srv_prod = ctx["prod"]
+  srv_cot = ctx["cot"]
+  srv_tipo = ctx["tipo"]
 
   tipos = srv_tipo.listar_todos()
 
@@ -329,17 +553,17 @@ def ver_lista_bimonetaria(
     )
 
 
-def exportar_precios_csv(
-  srv_prod,
-  srv_cot,
-  srv_tipo
-):
+def exportar_precios_csv(ctx: dict) -> None:
   """
   Exporta la lista de precios consolidada a un archivo en formato CSV.
 
   Genera una matriz de columnas dinámicas que calcula los precios de cada
   producto tanto en pesos argentinos como en cada tipo de dólar disponible.
   """
+
+  srv_prod = ctx["prod"]
+  srv_cot = ctx["cot"]
+  srv_tipo = ctx["tipo"]
 
   productos = srv_prod.listar_todos()
   tipos = srv_tipo.listar_todos()
@@ -419,19 +643,88 @@ def exportar_precios_csv(
     print(f"\nError al exportar CSV: {error}")
 
 
+def ejecutar_scraping_consola(ctx: dict) -> None:
+  """
+  Solicita el umbral de alerta y lanza el scraper de la competencia.
+
+  La diferencia de precios para generar alertas debe ser ingresada
+  por el usuario antes de cada ejecución del scraper.
+  """
+
+  try:
+
+    umbral = float(
+      input(
+        "Diferencia mínima de precios "
+        "para alertar ($): "
+      )
+    )
+
+  except ValueError:
+
+    print("El umbral debe ser numérico.")
+    return
+
+  ctx["scraper"].ejecutar_scraping(umbral)
+
+
+def generar_reporte_consola(ctx: dict) -> None:
+  """Genera el reporte comparativo de precios en formato Excel."""
+
+  try:
+
+    ctx["reporte"].generar_reporte_excel()
+
+  except ValueError as error:
+
+    print(f"Error: {error}")
+
+
+def ver_auditoria(ctx: dict) -> None:
+  """Muestra los últimos registros del historial de auditoría."""
+
+  registros = (
+    ctx["auditoria"].leer_ultimos(20)
+  )
+
+  if not registros:
+    print("\nNo hay registros de auditoría.")
+    return
+
+  print("\n--- Historial de auditoría ---")
+
+  for registro in registros:
+
+    fecha = registro.fecha.strftime(
+      "%Y-%m-%d %H:%M:%S"
+    )
+
+    print(
+      f"{fecha} | "
+      f"{registro.accion} | "
+      f"{registro.detalles[:80]}"
+    )
+
+
 # Bucle de control principal de la aplicación.
 
-def run():
+def run() -> None:
   """Ejecuta el ciclo de vida continuo de la interfaz de consola."""
-  (
-    srv_cat,
-    srv_prov,
-    srv_prod,
-    srv_stock,
-    srv_cot,
-    srv_mon,
-    srv_tipo
-  ) = init_app()
+
+  ctx = init_app()
+
+  opciones = {
+    "1": menu_productos,
+    "2": menu_stock,
+    "3": menu_cotizaciones,
+    "4": menu_catalogos,
+    "5": obtener_cotizaciones_api,
+    "6": ver_lista_bimonetaria,
+    "7": exportar_precios_csv,
+    "8": ejecutar_scraping_consola,
+    "9": generar_reporte_consola,
+    "10": ver_auditoria
+  }
 
   while True:
 
@@ -439,51 +732,13 @@ def run():
 
     op = input("Opción: ")
 
-    if op == "1":
-
-      menu_productos(
-        srv_prod,
-        srv_cat,
-        srv_prov,
-        srv_mon
-      )
-
-    elif op == "2":
-
-      menu_stock(
-        srv_stock
-      )
-
-    elif op == "3":
-
-      menu_cotizaciones(
-        srv_cot,
-        srv_tipo
-      )
-
-    elif op == "4":
-
-      obtener_cotizaciones_api(
-        srv_cot
-      )
-
-    elif op == "5":
-
-      ver_lista_bimonetaria(
-        srv_prod,
-        srv_cot,
-        srv_tipo
-      )
-
-    elif op == "6":
-
-      exportar_precios_csv(
-        srv_prod,
-        srv_cot,
-        srv_tipo
-      )
-
-    elif op == "0":
-
+    if op == "0":
       print("Saliendo...")
       break
+
+    accion = opciones.get(op)
+
+    if accion:
+      accion(ctx)
+    else:
+      print("Opción inválida")

@@ -1,3 +1,8 @@
+[Ejercicio 7]
+- Opciones de menú: Ejecutar scraping, Generar reporte y Ver historial de auditoría
+- CRUD completo por consola para productos, stock y catálogos
+- Actualización de requirements.txt (scrapy y openpyxl)
+
 [Ejercicio 6]
 - Decorador auditar para el registro de auditorías del sistema
 - Tabla auditoria con acción, fecha y detalles
