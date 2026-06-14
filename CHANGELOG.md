@@ -1,3 +1,7 @@
+[Ejercicio 1]
+- Creación de la rama Sprint_3 a partir de Sprint_2
+- Creación de la estructura del proyecto Scrapy (scraper/)
+
 # CHANGELOG
 
 ## Día 1 - Inicialización
