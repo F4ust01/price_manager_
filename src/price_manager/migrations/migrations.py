@@ -490,3 +490,97 @@ def migrar_datos(
     finally:
       # Cierre definitivo de los recursos de sesión.
       session.close()
+
+
+# =========================================
+# CARGA DE DATOS DESDE LOS SCRIPTS SQL
+# =========================================
+
+def cargar_datos_desde_sql(
+  carpeta_sqls: str
+) -> None:
+  """
+  Carga la base de datos ejecutando los scripts .sql de respaldo.
+
+  Recorre los archivos en un orden seguro respecto de las claves
+  foráneas y ejecuta cada sentencia. Las inserciones se convierten a
+  "INSERT OR IGNORE" para que el proceso sea idempotente y pueda
+  ejecutarse varias veces sin duplicar claves primarias.
+  """
+
+  # Orden de ejecución que respeta las dependencias entre tablas.
+  orden_archivos: list = [
+    "monedas.sql",
+    "tipos_cotizacion.sql",
+    "categorias.sql",
+    "proveedores.sql",
+    "precios.sql",
+    "productos.sql",
+    "stock.sql",
+    "cotizaciones.sql"
+  ]
+
+  db = ConexionDB()
+
+  insertadas: int = 0
+  omitidas: int = 0
+
+  with db.get_engine().connect() as conexion:
+
+    for nombre_archivo in orden_archivos:
+
+      ruta = os.path.join(
+        carpeta_sqls,
+        nombre_archivo
+      )
+
+      if not os.path.exists(ruta):
+
+        print(
+          f"Aviso: no existe {ruta}, "
+          "se omite."
+        )
+
+        continue
+
+      with open(
+        ruta,
+        encoding="utf-8"
+      ) as archivo:
+
+        for linea in archivo:
+
+          sentencia = linea.strip()
+
+          if not sentencia:
+
+            continue
+
+          # Se vuelve idempotente la sentencia para SQLite.
+          sentencia = sentencia.replace(
+            "INSERT INTO",
+            "INSERT OR IGNORE INTO"
+          )
+
+          resultado = (
+            conexion.exec_driver_sql(
+              sentencia
+            )
+          )
+
+          if resultado.rowcount > 0:
+
+            insertadas += 1
+
+          else:
+
+            omitidas += 1
+
+    # Confirmación de la transacción completa.
+    conexion.commit()
+
+  print(
+    f"Carga desde SQL finalizada. "
+    f"Insertadas: {insertadas} | "
+    f"Omitidas (ya existentes): {omitidas}"
+  )

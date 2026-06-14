@@ -1,3 +1,6 @@
+[Ejercicio 2]
+- Implementación de cargar_datos_desde_sql en migrations.py
+
 [Ejercicio 1]
 - Creación de la rama Sprint_3 a partir de Sprint_2
 - Creación de la estructura del proyecto Scrapy (scraper/)
