@@ -78,3 +78,7 @@
 ## Día 4
 - Implementación de modelos ORM
 - Relaciones entre entidades y tablas
+
+## Día 5
+- Migración de datos CSV hacia SQLite
+- Generación de scripts SQL

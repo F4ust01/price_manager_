@@ -1,0 +1,10 @@
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (1, 1728, '2026-06-14', 2);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (2, 230, '2026-06-14', 2);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (3, 48, '2026-06-14', 2);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (4, 362, '2026-06-14', 2);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (5, 208, '2026-06-14', 2);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (6, 455, '2026-06-14', 2);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (7, 180000, '2026-06-14', 1);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (8, 60000, '2026-06-14', 1);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (9, 800000, '2026-06-14', 1);
+INSERT INTO precios (id, valor, fecha, moneda_id) VALUES (10, 90000, '2026-06-14', 1);

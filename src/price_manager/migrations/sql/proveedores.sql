@@ -1,0 +1,10 @@
+INSERT INTO proveedores (id, nombre, contacto) VALUES (1, 'Intel', 'intel@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (2, 'AMD', 'amd@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (3, 'Nvidia', 'nvidia@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (4, 'Logitech', 'logitech@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (5, 'Kingston', 'kingston@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (6, 'Asus', 'asus@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (7, 'Gigabyte', 'gigabyte@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (8, 'Samsung', 'samsung@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (9, 'HP', 'hp@mail.com');
+INSERT INTO proveedores (id, nombre, contacto) VALUES (10, 'Dell', 'dell@mail.com');

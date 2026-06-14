@@ -1,0 +1,10 @@
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (1, 'Ultrabook Acer Aspire Go 15', 'Intel i9 16GB RAM 512GB SSD Silver', 1, 8, 9);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (2, 'Auricular Logitech Gamer G522', 'Inalambricos Black Over-ear', 2, 6, 4);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (3, 'Parlante Bluetooth Jbl Go 4', 'Purple Portatil 4.2W rms 2024', 3, 6, 4);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (4, 'Auricular Logitech G PRO X 2', 'Lightspeed Inalambrico Magenta', 4, 6, 4);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (5, 'Disco Solido Kingston 960gb A400', 'SSD Sata 3 2.5', 5, 3, 5);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (6, 'Monitor Samsung 32" LED Curvo G5', 'Odyssey Gaming LS32AG550 QHD 165Hz', 6, 5, 7);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (7, 'Monitor 24', 'FullHD', 7, 5, 7);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (8, 'Auriculares', 'Audio', 8, 6, 4);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (9, 'Notebook HP', 'Laptop', 9, 8, 9);
+INSERT INTO productos (id, nombre, descripcion, precio_id, categoria_id, proveedor_id) VALUES (10, 'Teclado', 'RGB', 10, 7, 4);

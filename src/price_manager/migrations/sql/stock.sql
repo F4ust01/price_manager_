@@ -1,0 +1,10 @@
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (1, 10, 'Central');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (2, 15, 'Central');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (3, 5, 'Central');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (4, 25, 'Local');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (5, 20, 'Local');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (6, 12, 'Central');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (7, 8, 'Local');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (8, 30, 'Local');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (9, 6, 'Central');
+INSERT INTO stock (producto_id, cantidad, almacen) VALUES (10, 18, 'Local');
