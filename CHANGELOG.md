@@ -1,3 +1,8 @@
+[Ejercicio 5]
+- ServicioReporte: reporte Excel comparativo con openpyxl
+- Columnas: Producto, Precio interno, Precio web, Diferencia y Fecha de extracción
+- Incorporación de openpyxl a las dependencias
+
 [Ejercicio 4]
 - Pipeline de comparación de precios interno vs web
 - Generación de archivo CSV de alertas en cada ejecución

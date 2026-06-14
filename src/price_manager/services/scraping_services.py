@@ -298,3 +298,144 @@ class ServicioScraper:
     for linea in lineas:
       inicio = linea.find(filtro) if filtro else 0
       print(f"  {linea[inicio:]}")
+
+
+# =========================================
+# REPORTE COMPARATIVO EN EXCEL
+# =========================================
+
+from openpyxl import Workbook
+from openpyxl.styles import Font
+
+from price_manager.models.models import (
+  ResultadoScrapingModel
+)
+
+import datetime
+
+RUTA_REPORTES = (
+  "/content/price_manager/reportes"
+)
+
+
+class ServicioReporte:
+  """Genera el reporte comparativo de precios en formato Excel."""
+
+  def __init__(self, session):
+    """Inicializa el servicio con una sesión activa de base de datos."""
+
+    self.session = session
+
+  def generar_reporte_excel(self) -> str:
+    """
+    Crea un archivo .xlsx con la comparativa interna contra la web.
+
+    Las columnas del reporte son: Producto, Precio interno, Precio
+    web, Diferencia y Fecha de extracción. Retorna la ruta del archivo.
+    """
+
+    resultados = self.session.query(
+      ResultadoScrapingModel
+    ).order_by(
+      ResultadoScrapingModel
+      .fecha_extraccion
+      .desc()
+    ).all()
+
+    if not resultados:
+
+      raise ValueError(
+        "No hay resultados de scraping. "
+        "Ejecute primero el scraper."
+      )
+
+    os.makedirs(
+      RUTA_REPORTES,
+      exist_ok=True
+    )
+
+    libro = Workbook()
+
+    hoja = libro.active
+
+    hoja.title = "Comparativa"
+
+    encabezados = [
+      "Producto",
+      "Precio interno",
+      "Precio web",
+      "Diferencia",
+      "Fecha de extracción"
+    ]
+
+    hoja.append(encabezados)
+
+    # Se resaltan los encabezados del reporte.
+    for celda in hoja[1]:
+
+      celda.font = Font(bold=True)
+
+    for resultado in resultados:
+
+      # Si el producto interno no está disponible se utiliza el
+      # nombre publicado en la web como referencia.
+      nombre = (
+        resultado.producto.nombre
+        if resultado.producto is not None
+        else resultado.nombre_web
+      )
+
+      hoja.append([
+        nombre,
+        round(
+          resultado.precio_interno,
+          2
+        ),
+        round(
+          resultado.precio_web,
+          2
+        ),
+        round(
+          resultado.diferencia,
+          2
+        ),
+        resultado
+        .fecha_extraccion
+        .strftime("%Y-%m-%d %H:%M")
+      ])
+
+    # Ajuste simple del ancho de las columnas.
+    anchos = [35, 16, 16, 14, 20]
+
+    for indice, ancho in enumerate(
+      anchos,
+      start=1
+    ):
+
+      letra = hoja.cell(
+        row=1,
+        column=indice
+      ).column_letter
+
+      hoja.column_dimensions[
+        letra
+      ].width = ancho
+
+    marca_tiempo = (
+      datetime.datetime.now().strftime(
+        "%Y-%m-%d_%H%M%S"
+      )
+    )
+
+    ruta_excel = os.path.join(
+      RUTA_REPORTES,
+      f"reporte_precios_{marca_tiempo}.xlsx"
+    )
+
+    libro.save(ruta_excel)
+
+    print(
+      f"Reporte generado: {ruta_excel}"
+    )
+
+    return ruta_excel
